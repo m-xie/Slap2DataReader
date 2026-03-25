@@ -26,6 +26,10 @@ classdef MultiDataFiles < dynamicprops
             files = dir([n_base_cycle '*.dat']);
             files = fullfile({files.folder},{files.name});
 
+            %if numel(files) > 1
+                %fprintf('Opening multi cycle SLAP2 data file:\n%s\n',strjoin(files,'\n'));
+            %end
+
             obj.hDataFiles = cellfun(@(f)slap2.util.DataFile(f),files);
             [~,sortIdx] = sort([obj.hDataFiles.firstLineTimestamp]);
             obj.hDataFiles = obj.hDataFiles(sortIdx);
@@ -129,7 +133,7 @@ classdef MultiDataFiles < dynamicprops
                 lineIndices_ = lineIndices(mask);
                 cycleIndices_ = cycleIndices(mask);
                 
-                lineData = obj.hDataFiles(fileIdx).getLineData(lineIndices_(:),cycleIndices_(:),iChannel);
+                lineData = obj.hDataFiles(fileIdx).getLineData(lineIndices_,cycleIndices_,iChannel);
                 lineDatas(mask) = lineData;
             end
         end

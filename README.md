@@ -43,7 +43,6 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
     Slap2DataFile.m
     getImageBatched.m
     getImages.m
-    getTimeSeries.m
   +util/
     MultiDataFiles.m        Multi-cycle file aggregator (dynamicprops)
     @DataFile/              Single .dat file reader
@@ -81,7 +80,7 @@ was detected.
 | Compilation | Requires C++17 compiler | None — pure MATLAB |
 | Platform | Windows only (MEX binary) | Windows, Linux, macOS |
 | Metadata formats | Branch-specific | Auto-detects `ParsePlan` (master) and `AcquisitionPlan` (fastZFeedbackExperiment3) |
-| `getTimeSeries` | Incomplete / syntax errors | Rewritten, functional |
+| `getTimeSeries` | Broken in original (undefined variables, unpopulated `metaData`) | Removed |
 
 Everything else — class names, package namespaces, property names, method
 signatures, `dynamicprops` wiring — is preserved so that existing code using

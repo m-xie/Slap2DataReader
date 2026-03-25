@@ -41,7 +41,6 @@ classdef Slap2DataFile < handle
         end
 
         [img, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,time,dt,zIdx,spTypeFlag);
-        [img, imgNonNorm, freshness] = getImages(obj,channelIdx,times,dt,zIdx,spTypeFlag);        
-        [dFF, dFFerr, tq] = getTimeSeries(obj, iChannel, iPixels, window);
+        [img, imgNonNorm, freshness] = getImages(obj,channelIdx,times,dt,zIdx,spTypeFlag);
     end
 end

@@ -25,7 +25,7 @@ function [imageData, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,tim
     cycleIndices = floor((timeWindow-1) / obj.hMultiDataFiles.header.linesPerCycle)+1;
     lineFastZIndices = obj.hMultiDataFiles.lineFastZIdxs(lineIndices);
 
-    lineZMask = lineFastZIndices(:)' == zIdx;
+    lineZMask = lineFastZIndices == zIdx;
     timeWindow = timeWindow(lineZMask);
     lineIndices  = lineIndices(lineZMask);
     cycleIndices = cycleIndices(lineZMask);
@@ -39,7 +39,7 @@ function [imageData, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,tim
     dataCount = zeros(imageSize,'single');
 
     % cell matrix of size (# lineIdxs x # channels)
-    lineData = obj.hMultiDataFiles.getLineData(lineIndices(:), cycleIndices(:), channelIdx);
+    lineData = obj.hMultiDataFiles.getLineData(lineIndices, cycleIndices, channelIdx);
     for iLineIndex = 1:numel(lineIndices)
         lineIdx = lineIndices(iLineIndex);
         superPixelIds = obj.hMultiDataFiles.lineSuperPixelIDs{lineIdx};
@@ -73,6 +73,7 @@ function [imageData, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,tim
             imageData = imageData(:,:,1)';
 
             if nargout>2 %compute 'freshness', how well-sampled each pixel is at this time
+                %freshness = reshape(tmpF(1:prod(imageSize)),imageSize);
                 freshness = dataCount(:,:,1)';
             end
         case 2  % return integration (block) only
@@ -81,7 +82,8 @@ function [imageData, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,tim
             imageData = imageData ./ dataCount;
             imageData = extractBlockImageOnly(imageData);
 
-            if nargout>2
+            if nargout>2 %compute 'freshness', how well-sampled each pixel is at this time
+                %freshness = reshape(tmpF(1:prod(imageSize)),imageSize);
                 freshness = extractBlockImageOnly(dataCount);
             end
         otherwise  % return all superpixels (both raster and integration)
@@ -91,7 +93,8 @@ function [imageData, imgNonNorm, freshness] = getImageBatched(obj,channelIdx,tim
         
             imageData = combineRasterAndBlockImages(imageData);
         
-            if nargout>2
+            if nargout>2 %compute 'freshness', how well-sampled each pixel is at this time
+                %freshness = reshape(tmpF(1:prod(imageSize)),imageSize); % original (tmpF undefined)
                 freshness = combineRasterAndBlockImages(dataCount);
             end
     end
