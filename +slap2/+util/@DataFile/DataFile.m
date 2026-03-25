@@ -29,6 +29,11 @@ classdef DataFile < handle
         firstLineTimestamp (1,1) uint64 = 0;
     end
 
+    properties (Hidden, SetAccess = private)
+        StreamId {mustBeScalarOrEmpty};
+        useMex (1,1) logical = false;
+    end
+
     methods
         function obj = DataFile(filename)
             arguments
@@ -58,7 +63,11 @@ classdef DataFile < handle
 
             obj.metaData = load(obj.metaDataFileName, '-mat');
 
-            %% load data — uses memmapfile (no MEX required)
+            %% load data
+            if ~isempty(which('MexFetchImageData'))
+                obj.StreamId = MexFetchImageData('OPEN', obj.datFileName);
+                obj.useMex = true;
+            end
             obj.rawData = memmapfile(obj.datFileName, 'Format', 'int16');
 
             obj.loadFileHeader();
@@ -69,6 +78,9 @@ classdef DataFile < handle
         end
 
         function delete(obj)
+            if obj.useMex && ~isempty(obj.StreamId)
+                MexFetchImageData('CLOSE', obj.StreamId);
+            end
             obj.rawData = [];
         end
     end
@@ -79,6 +91,37 @@ classdef DataFile < handle
     end
 
     methods
+        function checkFileIntegrity(obj, iLines, iCycles)
+            arguments
+                obj {mustBeScalarOrEmpty, mustBeNonempty};
+                iLines (:, 1) {mustBeInteger, mustBeNonnegative} = 1:obj.header.linesPerCycle;
+                iCycles (:, 1) {mustBeInteger, mustBeNonnegative} = 1:obj.numCycles;
+            end
+
+            assert(obj.useMex, 'SLAP2:DataFile:checkFileIntegrity requires MexFetchImageData');
+
+            if islogical(iLines)
+                validateattributes(iLines, {'logical'}, {'numel', length(obj.lineHeaderIdxs)}, ...
+                    [mfilename('class'), '.checkFileIntegrity'], 'iLines');
+                iLines = find(iLines);
+            else
+                validateattributes(iLines, {'numeric'}, {'<=', length(obj.lineHeaderIdxs)}, ...
+                    [mfilename('class'), '.checkFileIntegrity'], 'iLines');
+            end
+
+            cycleOffsets = (iCycles - 1) * obj.header.bytesPerCycle / 2;
+            lineOffsets = obj.lineHeaderIdxs(iLines) - 1;
+            headerOffsets = lineOffsets + (cycleOffsets .') + 2; % sample offset of 2
+
+            magicNumberValues = MexFetchImageData( ...
+                'GETDATA' ...
+                , obj.StreamId ...
+                , uint64([headerOffsets(:), repmat(2, numel(headerOffsets), 1)]) ...
+            );
+            magic_numbers = typecast(cell2mat(magicNumberValues), 'uint32');
+            assert(all(magic_numbers == obj.MAGIC_NUMBER), 'Data corruption detected');
+        end
+
         function [lineDataStartIdx, lineDataNumElements] = getLineDataIdxs(obj, lineIdx, cycleIdx)
             if nargin < 3 || isempty(cycleIdx)
                 cycleIdx = floor((lineIdx - 1) / obj.header.linesPerCycle) + 1;

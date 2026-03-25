@@ -2,11 +2,14 @@
 
 Cross-platform MATLAB reader for SLAP2 binary data files (`.dat` + `.meta`).
 
-This is a **standalone, pure-MATLAB** implementation that does not require MEX
-compilation. It is compatible with **Windows, Linux, and macOS** (MATLAB R2019b+).
+On **Windows 64-bit**, the reader automatically uses the bundled
+`MexFetchImageData` MEX binary for fast C++ I/O (matching the original `slap2`
+repo). On **Linux** and **macOS** (or when the MEX binary is not available), it
+falls back to a pure-MATLAB `memmapfile` implementation — no compilation
+required.
 
-The package structure mirrors the original `slap2` repo exactly — usage is
-unchanged.
+Compatible with MATLAB R2019b+. The package structure mirrors the original
+`slap2` repo exactly — usage is unchanged.
 
 ## Setup
 
@@ -47,13 +50,14 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
     MultiDataFiles.m        Multi-cycle file aggregator (dynamicprops)
     @DataFile/              Single .dat file reader
       DataFile.m
-      getLineData.m         Pure MATLAB replacement for MexFetchImageData
+      getLineData.m         MEX when available, memmapfile fallback
       getLineHeader.m
       loadFileHeader.m
       loadParsePlan.m
       parseLineHeader.m
       private/
         loadFileHeaderV2.m
+        MexFetchImageData.mexw64  (Windows 64-bit MEX binary)
 ```
 
 ## Metadata format auto-detection
@@ -69,16 +73,15 @@ automatically detects the format on load:
 
 No user action is required — `loadParsePlan` inspects the loaded metadata and
 dispatches to the correct parser. All downstream functions (`getImage`,
-`getImages`, `getTimeSeries`, etc.) work identically regardless of which format
-was detected.
+`getImages`, etc.) work identically regardless of which format was detected.
 
 ## What changed from the original `slap2` repo
 
 | Area | Original | This repo |
 |------|----------|-----------|
-| Binary I/O | `MexFetchImageData` (C++ MEX) | `memmapfile` + MATLAB indexing |
-| Compilation | Requires C++17 compiler | None — pure MATLAB |
-| Platform | Windows only (MEX binary) | Windows, Linux, macOS |
+| Binary I/O | `MexFetchImageData` (C++ MEX) | `MexFetchImageData` on Win64; `memmapfile` fallback elsewhere |
+| Compilation | Requires C++17 compiler | Pre-compiled `.mexw64` bundled; no compiler needed |
+| Platform | Windows only (MEX binary) | Windows (MEX), Linux, macOS (memmapfile) |
 | Metadata formats | Branch-specific | Auto-detects `ParsePlan` (master) and `AcquisitionPlan` (fastZFeedbackExperiment3) |
 | `getTimeSeries` | Broken in original (undefined variables, unpopulated `metaData`) | Removed |
 
