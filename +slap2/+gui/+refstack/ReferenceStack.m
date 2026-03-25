@@ -135,7 +135,16 @@ function [data, descriptions] = readTiff(fileName)
                 if hTiff.lastDirectory()
                     break;
                 end
+
+                % Suppress warnings only during directory advance.
+                oldWarnState = warning;
+                cleanupWarn = onCleanup(@() warning(oldWarnState));
+
+                lastwarn('','');      % clear remembered warning
+                warning('off','all'); % silence built-in repeated warning
                 hTiff.nextDirectory();
+
+                clear cleanupWarn
             end
             hTiff.close();
         catch ME
