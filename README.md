@@ -46,6 +46,10 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
     Slap2DataFile.m
     getImageBatched.m
     getImages.m
+  +gui/+refstack/
+    ReferenceStack.m        Load/save/compute reference stack TIFFs
+  +constants/
+    fastz.m                 Z-position rounding constants
   +util/
     MultiDataFiles.m        Multi-cycle file aggregator (dynamicprops)
     @DataFile/              Single .dat file reader
@@ -58,7 +62,27 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
       private/
         loadFileHeaderV2.m
         MexFetchImageData.mexw64  (Windows 64-bit MEX binary)
++most/
+  +util/
+    writeTiff.m             TIFF writer (from ScanImage most library)
 ```
+
+## Reference stacks
+
+Load a pre-computed reference stack TIFF:
+
+```matlab
+rs = slap2.gui.refstack.ReferenceStack.loadTif('path/to/recording-REFERENCE.tif');
+
+rs.data       % {chIdx, zIdx} cell array of image planes
+rs.channels   % channel indices
+rs.zs         % z-positions (single)
+```
+
+`loadTif` expects a pre-computed SLAP2 ReferenceStack TIFF (files with
+`SLAP2ReferenceStackFileVersion` or `sourceTifFile` in their metadata).
+TIFF reading uses the ScanImage `ScanImageTiffReader` MEX when available,
+falling back to MATLAB's built-in `Tiff` class otherwise.
 
 ## Metadata format auto-detection
 
