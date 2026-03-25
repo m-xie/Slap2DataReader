@@ -57,6 +57,22 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
         loadFileHeaderV2.m
 ```
 
+## Metadata format auto-detection
+
+Data files produced by different branches of the `slap2` acquisition software
+use different metadata layouts inside the `.meta` file. This reader
+automatically detects the format on load:
+
+| Format | Branch | Detection | Key traits |
+|--------|--------|-----------|------------|
+| **ParsePlan** | `master` | `AcquisitionContainer.ParsePlan` present | Per-line structs with zero-based `sliceIdx` |
+| **AcquisitionPlan** | `fastZFeedbackExperiment3` | `AcquisitionContainer.AcquisitionPlan` present (no `ParsePlan`) | `activeZs` (1-based), `superPixelIDs` (Dependent property; computed from `activeSuperPixels` when absent) |
+
+No user action is required — `loadParsePlan` inspects the loaded metadata and
+dispatches to the correct parser. All downstream functions (`getImage`,
+`getImages`, `getTimeSeries`, etc.) work identically regardless of which format
+was detected.
+
 ## What changed from the original `slap2` repo
 
 | Area | Original | This repo |
@@ -64,7 +80,7 @@ sdf.hMultiDataFiles.getLineHeader(lineIdx, cycleIdx)
 | Binary I/O | `MexFetchImageData` (C++ MEX) | `memmapfile` + MATLAB indexing |
 | Compilation | Requires C++17 compiler | None — pure MATLAB |
 | Platform | Windows only (MEX binary) | Windows, Linux, macOS |
-| Metadata formats | Old `ParsePlan` only | Old `ParsePlan` + new `AcquisitionPlan` |
+| Metadata formats | Branch-specific | Auto-detects `ParsePlan` (master) and `AcquisitionPlan` (fastZFeedbackExperiment3) |
 | `getTimeSeries` | Incomplete / syntax errors | Rewritten, functional |
 
 Everything else — class names, package namespaces, property names, method
