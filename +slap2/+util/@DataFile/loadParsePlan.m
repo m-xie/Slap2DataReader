@@ -47,7 +47,7 @@ function loadParsePlanFastZ(obj, AC)
     aZs = plan.activeZs;
     if ~iscell(aZs), aZs = num2cell(aZs, 2); end
     nonEmpty = ~cellfun(@isempty, aZs);
-    allZ = cell2mat(cellfun(@(x) x(:), aZs(nonEmpty), 'uni', false));
+    allZ = horzcat(aZs{nonEmpty});
     obj.fastZs = unique(allZ);
 
     % superPixelIDs is a Dependent property in the AcquisitionPlan class.
