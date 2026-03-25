@@ -1,4 +1,4 @@
-# Slap2DataFile
+# Slap2DataReader
 
 Cross-platform MATLAB reader for SLAP2 binary data files (`.dat` + `.meta`).
 
@@ -13,7 +13,7 @@ unchanged.
 Add the repository root to your MATLAB path:
 
 ```matlab
-addpath('path/to/Slap2DataFile');
+addpath('path/to/Slap2DataReader');
 ```
 
 ## Quick start
