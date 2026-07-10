@@ -49,8 +49,11 @@ cycleIndices = cycleIndices(lineZMask);
 
 % # rows x # columns x # channels
 FileHeader = obj.hMultiDataFiles.header;
-imageData = zeros(double([FileHeader.dmdPixelsPerRow*FileHeader.dmdPixelsPerColumn nChannels nFrames]),'single');
-dataCount = zeros(double([FileHeader.dmdPixelsPerRow*FileHeader.dmdPixelsPerColumn 1 nFrames]),'single');
+% allocate a raster plane and an integration (block) plane, so that block
+% ROI superpixel IDs (which index into the second plane) stay in bounds
+nPixels = double(FileHeader.dmdPixelsPerRow*FileHeader.dmdPixelsPerColumn);
+imageData = zeros([nPixels*2 nChannels nFrames],'single');
+dataCount = zeros([nPixels*2 1 nFrames],'single');
 
 % cell matrix of size (# lineIdxs x # channels)
 lineData = obj.hMultiDataFiles.getLineData(lineIndices, cycleIndices, channelIdxs);
@@ -86,10 +89,12 @@ switch spTypeFlag
         %imgNonNorm = imageData(:,:,1)';
 
         imageData = imageData ./ dataCount;
+        imageData = imageData(1:nPixels, :, :);
         imageData = permute(reshape(imageData, FileHeader.dmdPixelsPerRow, FileHeader.dmdPixelsPerColumn, nChannels, nFrames), [2 1 3 4]);
         
         if nargout>1 %compute 'freshness', how well-sampled each pixel is at this time
             %freshness = reshape(tmpF(1:prod(imageSize)),imageSize);
+            dataCount = dataCount(1:nPixels, :, :);
             dataCount = permute(reshape(dataCount, FileHeader.dmdPixelsPerRow, FileHeader.dmdPixelsPerColumn,  1, nFrames), [2 1 3 4]);
         end
     case 2  % return integration (block) only
@@ -120,26 +125,29 @@ end
         bspm = obj.hMultiDataFiles.zPixelReplacementMapsNonRedundant{zIdx};
         if ~isempty(bspm)
             bspm = bspm + 1; % change from zero based indexing to one based indexing
-            data(bspm(:,1)) = data(bspm(:,2));
+            data(bspm(:,1), :, :) = data(bspm(:,2), :, :);
         end
 
-        rasterImg = data(:,:,1);
-        blockImg  = data(:,:,2);
+        nCh = size(data, 2);
+        nF  = size(data, 3);
+        rasterImg = permute(reshape(data(1:nPixels, :, :),      FileHeader.dmdPixelsPerRow, FileHeader.dmdPixelsPerColumn, nCh, nF), [2 1 3 4]);
+        blockImg  = permute(reshape(data(nPixels+1:end, :, :),  FileHeader.dmdPixelsPerRow, FileHeader.dmdPixelsPerColumn, nCh, nF), [2 1 3 4]);
 
         blockImg_mask = ~isnan(blockImg);
         img = rasterImg;
         img(blockImg_mask) = blockImg(blockImg_mask);
-        img = img';
     end
 
     function blockImg = extractBlockImageOnly(data)
-        blockImg = nan(size(data,1:2));
+        nCh = size(data, 2);
+        nF  = size(data, 3);
+        blockImg = nan([nPixels nCh nF], 'like', data);
 
         bspm = obj.hMultiDataFiles.zPixelReplacementMapsNonRedundant{zIdx};
         if ~isempty(bspm)
             bspm = bspm + 1; % change from zero based indexing to one based indexing
-            blockImg(bspm(:,1)) = data(bspm(:,2));
+            blockImg(bspm(:,1), :, :) = data(bspm(:,2), :, :);
         end
-        blockImg  = blockImg';
+        blockImg = permute(reshape(blockImg, FileHeader.dmdPixelsPerRow, FileHeader.dmdPixelsPerColumn, nCh, nF), [2 1 3 4]);
     end
 end
