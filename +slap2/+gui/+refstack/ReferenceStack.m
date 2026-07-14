@@ -126,7 +126,13 @@ function [data, descriptions] = readTiff(fileName)
             frames = {};
             descriptions = {};
             while true
-                frames{end+1} = hTiff.read(); %#ok<AGROW>
+                % Transpose in-plane X/Y to match ScanImageTiffReader output:
+                % saveTif writes pages with isTransposed=true, so the on-disk
+                % layout has X and Y swapped relative to MATLAB's [row,col]
+                % convention.  permute(frame,[2 1 3]) restores the expected
+                % orientation and is safe for multi-channel/RGB pages.
+                frame = hTiff.read();
+                frames{end+1} = permute(frame, [2 1 3]); %#ok<AGROW>
                 try
                     descriptions{end+1} = hTiff.getTag('ImageDescription'); %#ok<AGROW>
                 catch
